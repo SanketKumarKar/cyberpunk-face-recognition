@@ -202,7 +202,6 @@ async function startWebcam() {
     try {
         showLoadingScreen('Initializing Camera...');
         
-        // Request camera with appropriate constraints for device type
         const constraints = {
             video: {
                 facingMode: 'user' // Use front camera on mobile
@@ -222,6 +221,15 @@ async function startWebcam() {
         
         stream = await navigator.mediaDevices.getUserMedia(constraints);
         
+        // Set mobile video attributes at the right time
+        if (isMobileDevice) {
+            video.setAttribute('playsinline', '');
+            video.setAttribute('autoplay', '');
+            video.setAttribute('muted', '');
+            video.playsInline = true;
+            video.autoplay = true;
+            video.muted = true;
+        }
         video.srcObject = stream;
         
         // Set up video event listener to adjust canvas size once video metadata is loaded
@@ -626,95 +634,60 @@ function drawCorner(x, y, size, width, position) {
 // Take a snapshot from the current video frame
 function takeSnapshot() {
     if (!stream) return;
-    
-    // Add a camera shutter effect
-    addShutterEffect();
-    
-    // Create a new canvas for the snapshot
+    if (isMobileDevice && (!video.videoWidth || !video.videoHeight)) {
+        showErrorMessage('Snapshot Error', 'Camera not ready. Please try again.');
+        return;
+    }
+    // Capture the snapshot first (no shutter effect on canvas)
     const snapshotCanvas = document.createElement('canvas');
     snapshotCanvas.width = video.videoWidth;
     snapshotCanvas.height = video.videoHeight;
     const snapshotCtx = snapshotCanvas.getContext('2d');
-    
-    // Draw the current video frame with a slight cyberpunk filter
+    // On iOS/Android, force a reflow to ensure the video frame is ready
+    if (isMobileDevice) {
+        video.pause();
+        video.play();
+    }
     snapshotCtx.drawImage(video, 0, 0, snapshotCanvas.width, snapshotCanvas.height);
-    
-    // Add a subtle cyan overlay for cyberpunk effect
     snapshotCtx.fillStyle = 'rgba(0, 255, 255, 0.05)';
     snapshotCtx.fillRect(0, 0, snapshotCanvas.width, snapshotCanvas.height);
-    
-    // Draw any overlay elements (detections)
     snapshotCtx.drawImage(overlay, 0, 0, snapshotCanvas.width, snapshotCanvas.height);
-    
-    // Convert to data URL
-    const dataUrl = snapshotCanvas.toDataURL('image/jpeg', isMobileDevice ? 0.7 : 0.9); // Lower quality on mobile
-    
-    // Add to snapshots array
-    const timestamp = new Date().toLocaleString();
-    snapshots.push({ id: Date.now(), dataUrl, timestamp });
-    
-    // Update snapshots display
+    const dataUrl = snapshotCanvas.toDataURL('image/jpeg', isMobileDevice ? 0.7 : 1.0);
+    // Add snapshot to snapshots array
+    const snapshotId = snapshots.length > 0 ? snapshots[snapshots.length - 1].id + 1 : 1;
+    snapshots.push({
+        id: snapshotId,
+        dataUrl: dataUrl,
+        timestamp: new Date().toISOString()
+    });
     updateSnapshotsDisplay();
-    
-    // Provide haptic feedback on supporting devices
-    if (isMobileDevice && navigator.vibrate) {
-        navigator.vibrate(50); // Short vibration for feedback
-    }
-    
-    // Show notification
-    showSuccessNotification('Snapshot Captured');
+    // Trigger download
+    const downloadLink = document.createElement('a');
+    downloadLink.href = dataUrl;
+    downloadLink.download = `snapshot-${Date.now()}.jpg`;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+    // Now show the shutter effect visually (does not affect snapshot)
+    addShutterEffect();
+    showSuccessNotification('Snapshot taken');
 }
 
-// Add a camera shutter effect when taking a snapshot
-function addShutterEffect() {
-    // Create a white flash overlay
-    const flash = document.createElement('div');
-    flash.style.cssText = `
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: white;
-        opacity: 0;
-        z-index: 100;
-        pointer-events: none;
-    `;
-    
-    document.querySelector('.video-container').appendChild(flash);
-    
-    // Flash animation
-    setTimeout(() => {
-        flash.style.opacity = '0.7';
-        setTimeout(() => {
-            flash.style.opacity = '0';
-            setTimeout(() => {
-                document.querySelector('.video-container').removeChild(flash);
-            }, 300);
-        }, 50);
-    }, 10);
-    
-    // Play camera shutter sound
-    const shutterSound = new Audio('data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU3LjU2LjEwMAAAAAAAAAAAAAAA//tAwAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAADsAD///////////////////////////////////////////8AAAA8TEFNRTMuMTAwBK8AAAAAAAAAAAARxAAANAkYgAAAAAAAAAAAAAAAAAAAAP/7UMQAAApYbmJYYAAAMBkhiQwAAAA1TNv7xixlQ0vQpGnqCYmMBLzhD/6QmM4SzixEjAXXCFCw4wSoHOq1i8YGPBHb8faxTOjOIlD8nM4q0iIgVEkJWmK+J0SQqaKZEZ9QnTOl//tSxAwADNBaebmJgAF6Dl83MeABMX1OhKbkIlihizHmloNQ1gUFD+QeKIZEJcvXKqiSqUbypbpBw8kwrkbOF3rvvx7iKDqEJxUJGmiXM1u1FQqbfKMVtQ1EVbZiMnqGOl8S0qWa//tSxAuAFKDrUb2ZACm1GmcnPMgA6Jg3MGhUU6mkJkRHCkCa1QoIYzgTSFPLSIuERJKCFVibmb9lbfUAMGQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA');
-    shutterSound.play();
-}
-
-// Update the snapshots container with a cyberpunk style
+// Update snapshots display
 function updateSnapshotsDisplay() {
     if (snapshots.length === 0) {
         snapshotsContainer.innerHTML = '<p class="no-results">No snapshots taken yet</p>';
         return;
     }
-    
     let html = '';
-    
-    // For mobile, limit the number of snapshots displayed to avoid performance issues
     const displaySnapshots = isMobileDevice ? snapshots.slice(-12) : snapshots;
-    
     displaySnapshots.forEach(snapshot => {
         html += `
             <div class="snapshot-item" id="snapshot-${snapshot.id}">
                 <img src="${snapshot.dataUrl}" alt="Snapshot from ${snapshot.timestamp}" title="${snapshot.timestamp}">
+                <a class="download-btn" href="${snapshot.dataUrl}" download="snapshot-${snapshot.id}.jpg" title="Download snapshot">
+                    <i class="fas fa-download"></i>
+                </a>
                 <button class="delete-btn" onclick="deleteSnapshot(${snapshot.id})" aria-label="Delete snapshot">
                     <i class="fas fa-trash"></i>
                 </button>
@@ -722,177 +695,63 @@ function updateSnapshotsDisplay() {
             </div>
         `;
     });
-    
     snapshotsContainer.innerHTML = html;
-    
-    // Add cyberpunk data display animation to new snapshots
     const newSnapshot = document.getElementById(`snapshot-${snapshots[snapshots.length - 1].id}`);
     if (newSnapshot) {
         newSnapshot.classList.add('fade-in');
     }
 }
 
-// Format timestamp to cyberpunk style
+// Delete a snapshot by ID
+function deleteSnapshot(id) {
+    snapshots = snapshots.filter(snapshot => snapshot.id !== id);
+    updateSnapshotsDisplay();
+    showSuccessNotification(`Snapshot ${id} deleted`);
+}
+
+// Format timestamp for display
 function formatTimestamp(timestamp) {
     const date = new Date(timestamp);
-    return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')}`;
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`;
 }
 
-// Delete a snapshot
-window.deleteSnapshot = function(id) {
-    const snapshotElement = document.getElementById(`snapshot-${id}`);
+// Add a camera shutter effect
+function addShutterEffect() {
+    // Create a temporary canvas to draw the shutter effect
+    const shutterCanvas = document.createElement('canvas');
+    shutterCanvas.width = video.videoWidth;
+    shutterCanvas.height = video.videoHeight;
+    const shutterCtx = shutterCanvas.getContext('2d');
     
-    // Add fade out animation
-    if (snapshotElement) {
-        snapshotElement.style.opacity = '0';
-        snapshotElement.style.transform = 'scale(0.8)';
-        
-        setTimeout(() => {
-            // Remove from array
-            snapshots = snapshots.filter(snapshot => snapshot.id !== id);
-            // Update display
-            updateSnapshotsDisplay();
-        }, 300);
-    }
+    // Draw a white rectangle over the video
+    shutterCtx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    shutterCtx.fillRect(0, 0, shutterCanvas.width, shutterCanvas.height);
     
-    // Provide haptic feedback on supporting devices
-    if (isMobileDevice && navigator.vibrate) {
-        navigator.vibrate(50); // Short vibration for feedback
-    }
-};
-
-// --- Camera permission modal logic for mobile ---
-function showCameraPermissionModal() {
-    cameraPermissions.style.display = 'flex';
-    document.body.classList.add('modal-open');
-}
-function hideCameraPermissionModal() {
-    cameraPermissions.style.display = 'none';
-    document.body.classList.remove('modal-open');
+    // Add a quick fade-out animation
+    shutterCtx.globalAlpha = 0.8;
+    shutterCtx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+    shutterCtx.fillRect(0, 0, shutterCanvas.width, shutterCanvas.height);
+    
+    // Draw the shutter effect on the main canvas
+    ctx.drawImage(shutterCanvas, 0, 0);
+    
+    // Remove the temporary canvas
+    shutterCanvas.remove();
 }
 
-// Direct mobile camera request for iOS/Android
-async function requestCameraMobile() {
-    hideCameraPermissionModal();
-    await startWebcam();
-}
-
-// On mobile, show camera permission modal on first load
-window.addEventListener('DOMContentLoaded', function() {
-    if (isMobileDevice && !stream) {
-        showCameraPermissionModal();
-    }
+// Event listeners
+startButton.addEventListener('click', () => {
+    startWebcam();
 });
 
-// Retry camera button logic (mobile): direct user gesture
-if (retryCameraButton) {
-    retryCameraButton.onclick = requestCameraMobile;
-}
+stopButton.addEventListener('click', () => {
+    stopWebcam();
+});
 
-// Patch startWebcam for desktop only
-if (!isMobileDevice) {
-    startButton.addEventListener('click', startWebcam);
-} else {
-    // On mobile, Start Camera shows modal (if not already shown)
-    startButton.addEventListener('click', function() {
-        showCameraPermissionModal();
-    });
-}
+snapshotButton.addEventListener('click', () => {
+    takeSnapshot();
+});
 
-// Event Listeners
-stopButton.addEventListener('click', stopWebcam);
-snapshotButton.addEventListener('click', takeSnapshot);
-startButton.addEventListener('click', startWebcam);
-
-// Add passive event listeners for better mobile performance
-detectionType.addEventListener('change', () => {
-    if (detectionInterval) {
-        startDetection(); // Restart detection with new options
-    }
-}, { passive: true });
-
-// Retry camera button
-if (retryCameraButton) {
-    retryCameraButton.addEventListener('click', startWebcam);
-}
-
-// Add touchstart events for mobile for better touch response
-if (snapshotButton) {
-    snapshotButton.addEventListener('touchstart', function(e) {
-        e.preventDefault(); // Prevent default touch behavior
-        this.classList.add('active');
-    }, { passive: false });
-    
-    snapshotButton.addEventListener('touchend', function(e) {
-        e.preventDefault();
-        this.classList.remove('active');
-    }, { passive: false });
-}
-
-// Window resize handler for mobile
-window.addEventListener('resize', function() {
-    if (isMobileDevice) {
-        handleOrientationChange();
-        
-        // Re-adjust canvas dimensions if video is running
-        if (stream && video.readyState) {
-            overlay.width = video.videoWidth;
-            overlay.height = video.videoHeight;
-        }
-    }
-}, { passive: true });
-
-// Handle document visibility changes (tab switching, app backgrounding on mobile)
-document.addEventListener('visibilitychange', function() {
-    if (document.hidden) {
-        // App went to background - pause processing to save battery
-        if (detectionInterval) {
-            clearInterval(detectionInterval);
-            detectionInterval = null;
-        }
-    } else {
-        // App came to foreground - resume processing if camera is on
-        if (stream && !detectionInterval) {
-            startDetection();
-        }
-    }
-}, { passive: true });
-
-// Initialize the app with cyberpunk loading animation
-window.onload = async function() {
-    // Check if running on mobile device
-    checkMobileDevice();
-    
-    // Add CSS class for fade-in animations
-    document.querySelector('header').classList.add('fade-in');
-    document.querySelector('.content').classList.add('fade-in');
-    
-    // Try to restore any previously saved snapshots from localStorage
-    try {
-        const savedSnapshots = localStorage.getItem('cyberpunkFaceSnapshots');
-        if (savedSnapshots) {
-            snapshots = JSON.parse(savedSnapshots);
-            updateSnapshotsDisplay();
-        }
-    } catch (e) {
-        console.error('Error restoring snapshots:', e);
-    }
-    
-    // Load the models
-    await loadModels();
-    
-    // Initialize snapshots display
-    updateSnapshotsDisplay();
-    
-    // Check for iOS Safari fullscreen
-    if (isMobileDevice && /iPad|iPhone|iPod/.test(navigator.platform) && !window.MSStream) {
-        // Add a tap handler to go fullscreen on iOS when supported
-        document.body.addEventListener('touchend', function() {
-            if (document.documentElement.requestFullscreen) {
-                document.documentElement.requestFullscreen();
-            } else if (document.documentElement.webkitRequestFullscreen) {
-                document.documentElement.webkitRequestFullscreen();
-            }
-        }, { once: true, passive: true });
-    }
-};
+// Initialize app
+checkMobileDevice();
+loadModels();
