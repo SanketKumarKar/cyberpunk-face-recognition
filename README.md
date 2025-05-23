@@ -79,37 +79,6 @@ All processing happens in the browser – no data is sent to any server!
 
 3. Open your browser and navigate to `http://localhost:8000` (or whichever port your server uses)
 
-## 🚢 Deployment to Netlify
-
-### Manual Deployment
-
-1. Create a Netlify account at [netlify.com](https://www.netlify.com/)
-2. From the Netlify dashboard, click "New site from Git"
-3. Connect to your GitHub repository
-4. Set build settings (not required for this project)
-5. Click "Deploy site"
-
-### Netlify CLI Deployment
-
-1. Install Netlify CLI:
-   ```bash
-   npm install -g netlify-cli
-   ```
-
-2. Login to your Netlify account:
-   ```bash
-   netlify login
-   ```
-
-3. Initialize your project:
-   ```bash
-   netlify init
-   ```
-
-4. Deploy:
-   ```bash
-   netlify deploy --prod
-   ```
 
 ## 📁 Project Structure
 
