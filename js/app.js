@@ -798,9 +798,9 @@ startWebcam = async function() {
 };
 
 // Event Listeners
-startButton.addEventListener('click', startWebcam);
 stopButton.addEventListener('click', stopWebcam);
 snapshotButton.addEventListener('click', takeSnapshot);
+startButton.addEventListener('click', startWebcam);
 
 // Add passive event listeners for better mobile performance
 detectionType.addEventListener('change', () => {
