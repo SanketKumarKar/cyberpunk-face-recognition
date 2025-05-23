@@ -13,7 +13,7 @@ A browser-based face recognition application that works entirely client-side usi
 
 ## 🚀 Live Demo
 
-Visit the live demo at: [https://your-netlify-url.netlify.app](https://your-netlify-url.netlify.app)
+Visit the live demo at: [https://cyberface-scan.netlify.app/](!!!ClickMe!!!)
 
 ## 🔧 How It Works
 
