@@ -771,6 +771,12 @@ function hideCameraPermissionModal() {
     document.body.classList.remove('modal-open');
 }
 
+// Direct mobile camera request for iOS/Android
+async function requestCameraMobile() {
+    hideCameraPermissionModal();
+    await startWebcam();
+}
+
 // On mobile, show camera permission modal on first load
 window.addEventListener('DOMContentLoaded', function() {
     if (isMobileDevice && !stream) {
@@ -778,24 +784,20 @@ window.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Retry camera button logic (mobile)
+// Retry camera button logic (mobile): direct user gesture
 if (retryCameraButton) {
-    retryCameraButton.addEventListener('click', function() {
-        hideCameraPermissionModal();
-        startWebcam();
-    });
+    retryCameraButton.onclick = requestCameraMobile;
 }
 
-// Patch startWebcam to always hide modal on success
-const originalStartWebcam = startWebcam;
-startWebcam = async function() {
-    try {
-        await originalStartWebcam();
-        hideCameraPermissionModal();
-    } catch (e) {
+// Patch startWebcam for desktop only
+if (!isMobileDevice) {
+    startButton.addEventListener('click', startWebcam);
+} else {
+    // On mobile, Start Camera shows modal (if not already shown)
+    startButton.addEventListener('click', function() {
         showCameraPermissionModal();
-    }
-};
+    });
+}
 
 // Event Listeners
 stopButton.addEventListener('click', stopWebcam);
