@@ -676,35 +676,19 @@ footer p {
 
 /* iOS-specific fixes */
 @supports (-webkit-touch-callout: none) {
-  body {
-    height: -webkit-fill-available;
-  }
-  
-  /* Fix for iOS overscroll behavior */
-  html, body {
-    position: fixed;
-    overflow: hidden;
-    width: 100%;
+  body, html {
+    position: static !important;
+    overflow: auto !important;
     height: 100%;
-  }
-  
-  .content {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    padding-top: 60px; /* Adjust for header height */
-  }
-  
-  header {
-    position: fixed;
-    top: 0;
-    left: 0;
     width: 100%;
-    z-index: 100;
+  }
+  .content {
+    position: static !important;
+    overflow-y: auto !important;
+    padding-top: 60px;
+  }
+  header {
+    position: static !important;
   }
   
   /* Fix for video height on iOS */
@@ -713,6 +697,14 @@ footer p {
     object-fit: cover;
     width: 100%;
   }
+}
+
+/* iOS/mobile scroll fix: Only apply fixed/overflow:hidden when modal is open */
+body.modal-open, html.modal-open {
+  position: fixed !important;
+  overflow: hidden !important;
+  width: 100%;
+  height: 100%;
 }
 
 /* Responsive Design */

@@ -761,6 +761,42 @@ window.deleteSnapshot = function(id) {
     }
 };
 
+// --- Camera permission modal logic for mobile ---
+function showCameraPermissionModal() {
+    cameraPermissions.style.display = 'flex';
+    document.body.classList.add('modal-open');
+}
+function hideCameraPermissionModal() {
+    cameraPermissions.style.display = 'none';
+    document.body.classList.remove('modal-open');
+}
+
+// On mobile, show camera permission modal on first load
+window.addEventListener('DOMContentLoaded', function() {
+    if (isMobileDevice && !stream) {
+        showCameraPermissionModal();
+    }
+});
+
+// Retry camera button logic (mobile)
+if (retryCameraButton) {
+    retryCameraButton.addEventListener('click', function() {
+        hideCameraPermissionModal();
+        startWebcam();
+    });
+}
+
+// Patch startWebcam to always hide modal on success
+const originalStartWebcam = startWebcam;
+startWebcam = async function() {
+    try {
+        await originalStartWebcam();
+        hideCameraPermissionModal();
+    } catch (e) {
+        showCameraPermissionModal();
+    }
+};
+
 // Event Listeners
 startButton.addEventListener('click', startWebcam);
 stopButton.addEventListener('click', stopWebcam);
