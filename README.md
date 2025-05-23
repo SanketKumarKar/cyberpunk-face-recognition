@@ -53,7 +53,7 @@ All processing happens in the browser – no data is sent to any server!
 
 1. Clone this repository:
    ```bash
-   git clone https://github.com/SanketKumarKar/face-recognition-web.git
+   git clone https://github.com/SanketKumarKar/cyberpunk-face-recognition.git
    cd face-recognition-web
    ```
 
