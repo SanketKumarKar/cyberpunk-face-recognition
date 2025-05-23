@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0a0a0a">
+    <title>Cyberpunk Face Recognition</title>
+    <!-- Add Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Add Google Fonts: Roboto and Montserrat for cyberpunk theme -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Import face-api.js from CDN for improved loading speed -->
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    <!-- Main stylesheet -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="loading-content">
+            <div class="loader"></div>
+            <div class="loading-text">Loading Neural Networks...</div>
+        </div>
+    </div>
+
+    <!-- Orientation Change Message (for mobile) -->
+    <div class="orientation-message">
+        <i class="fas fa-mobile-alt"></i>
+        <p>Please use portrait orientation for the best experience</p>
+    </div>
+
+    <!-- Background Elements -->
+    <div class="bg-grid"></div>
+    <div class="bg-glow"></div>
+
+    <!-- Header -->
+    <header>
+        <h1><i class="fas fa-robot"></i> CYBERPUNK FACE RECOGNITION</h1>
+        
+        <!-- Controls -->
+        <div class="controls">
+            <div class="control-group">
+                <label for="detection-type">Detection Type</label>
+                <select id="detection-type">
+                    <option value="face">Face Only</option>
+                    <option value="landmarks">Face Landmarks</option>
+                    <option value="expressions">Face Expressions</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label for="min-confidence">Confidence: <span id="confidence-value">0.5</span></label>
+                <input type="range" id="min-confidence" min="0.1" max="0.9" step="0.1" value="0.5">
+            </div>
+            
+            <div class="control-group">
+                <button id="start-button" class="btn"><i class="fas fa-play"></i> Start Camera</button>
+                <button id="snapshot-button" class="btn primary-btn" disabled><i class="fas fa-camera"></i> Snapshot</button>
+                <button id="stop-button" class="btn" disabled><i class="fas fa-stop"></i> Stop</button>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Main Content -->
+    <div class="content">
+        <div class="video-container">
+            <video id="video" playsinline autoplay muted></video>
+            <canvas id="overlay"></canvas>
+            
+            <!-- Camera Permissions Message (for mobile) -->
+            <div class="camera-permissions" style="display: none;">
+                <h3>Camera Access Required</h3>
+                <p>Please allow camera access to use face recognition features. Tap the button below to try again.</p>
+                <button id="retry-camera" class="btn primary-btn"><i class="fas fa-video"></i> Allow Camera</button>
+            </div>
+        </div>
+        
+        <!-- Results Section -->
+        <div class="results-section">
+            <h2><i class="fas fa-chart-bar"></i> Detection Results</h2>
+            <div id="results">
+                <p class="no-results">Start the camera and detection to see results</p>
+            </div>
+        </div>
+        
+        <!-- Snapshots Section -->
+        <div class="snapshots-section">
+            <h2><i class="fas fa-images"></i> Snapshots</h2>
+            <div id="snapshots-container">
+                <p class="no-results">No snapshots taken yet</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <footer>
+        <p>© 2025 Cyberpunk Face Recognition | <i class="fas fa-mobile-alt"></i> Mobile Compatible</p>
+    </footer>
+
+    <!-- Main JS -->
+    <script src="js/app.js"></script>
+</body>
+</html>
