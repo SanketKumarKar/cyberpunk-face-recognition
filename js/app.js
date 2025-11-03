@@ -74,6 +74,57 @@ const colors = {
     boxShadow: '0 0 10px rgba(0, 255, 255, 0.7)'
 };
 
+// Mapping expressions to emoji for an on-screen HUD
+const expressionEmoji = {
+    neutral: '😐',
+    happy: '😄',
+    sad: '😢',
+    angry: '😠',
+    fearful: '😨',
+    disgusted: '🤢',
+    surprised: '😲'
+};
+
+// Create an on-screen HUD to show the primary detected emotion
+function createEmotionHUD() {
+    let hud = document.getElementById('emotion-hud');
+    const videoContainer = document.querySelector('.video-container') || document.body;
+    if (!hud) {
+        hud = document.createElement('div');
+        hud.id = 'emotion-hud';
+        hud.style.cssText = `
+            position: absolute;
+            right: 16px;
+            top: 16px;
+            z-index: 1001;
+            background: rgba(0,0,0,0.5);
+            color: ${colors.text};
+            padding: 10px 14px;
+            border-radius: 12px;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            font-family: Montserrat, Arial, sans-serif;
+            box-shadow: ${colors.boxShadow};
+        `;
+
+        const emojiSpan = document.createElement('span');
+        emojiSpan.id = 'emotion-emoji';
+        emojiSpan.style.fontSize = '26px';
+        hud.appendChild(emojiSpan);
+
+        const textSpan = document.createElement('span');
+        textSpan.id = 'emotion-text';
+        textSpan.style.fontWeight = '700';
+        hud.appendChild(textSpan);
+
+        // Append HUD into the video container so it overlays correctly
+        // If video container uses relative positioning it will align correctly
+        videoContainer.style.position = videoContainer.style.position || 'relative';
+        videoContainer.appendChild(hud);
+    }
+}
+
 // Load the face-api.js models
 async function loadModels() {
     try {
@@ -427,6 +478,8 @@ function displayResults(detections) {
     
     // Create results HTML
     let resultsHTML = '';
+    // Primary expression for the first/primary face (used for the on-screen HUD)
+    let primaryExpression = null;
     
     // Draw differently based on detection type
     if (resizedDetections.length > 0) {
@@ -555,6 +608,11 @@ function displayResults(detections) {
                 const topExpression = expressionArr.reduce((prev, current) => 
                     prev[1] > current[1] ? prev : current
                 );
+
+                // If this is the first detected face, record its top expression for the HUD
+                if (index === 0) {
+                    primaryExpression = { name: topExpression[0], score: topExpression[1] };
+                }
                 
                 // Use the expression value in a cyberpunk style panel
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
@@ -597,6 +655,21 @@ function displayResults(detections) {
     
     // Update results div
     results.innerHTML = resultsHTML;
+
+    // Update on-screen emotion HUD (primary face)
+    const hud = document.getElementById('emotion-hud');
+    if (hud) {
+        const emojiSpan = document.getElementById('emotion-emoji');
+        const textSpan = document.getElementById('emotion-text');
+        if (primaryExpression) {
+            const emoji = expressionEmoji[primaryExpression.name] || '🙂';
+            emojiSpan.textContent = emoji;
+            textSpan.textContent = `${primaryExpression.name.toUpperCase()} ${(primaryExpression.score * 100).toFixed(0)}%`;
+            hud.style.display = 'flex';
+        } else {
+            hud.style.display = 'none';
+        }
+    }
 }
 
 // Draw a cyberpunk corner bracket
@@ -755,3 +828,6 @@ snapshotButton.addEventListener('click', () => {
 // Initialize app
 checkMobileDevice();
 loadModels();
+
+// Create the on-screen emotion HUD
+createEmotionHUD();
